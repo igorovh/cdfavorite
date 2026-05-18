@@ -6,7 +6,7 @@ import { hasDuplicateEntry, type SearchResult, searchEntries } from "../domain/p
 import { pathsJsonPath } from "../infrastructure/config-paths";
 import { loadPathEntries, savePathEntries } from "../infrastructure/storage";
 
-type Mode = "loading" | "load-error" | "list" | "form";
+type Mode = "loading" | "load-error" | "list" | "form" | "confirm-delete";
 type FormKind = "add" | "edit";
 type FormField = "name" | "path" | "favorite";
 
@@ -17,6 +17,12 @@ type FormState = {
   path: string;
   isFavorite: boolean;
   field: FormField;
+};
+
+type DeleteTarget = {
+  index: number;
+  name: string;
+  returnMode: "list" | "form";
 };
 
 type AppProps = {
@@ -46,6 +52,7 @@ export function App({ onSelect, onProfile }: AppProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [form, setForm] = useState<FormState | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | undefined>(undefined);
   const [warning, setWarning] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [idleDots, setIdleDots] = useState(0);
@@ -122,6 +129,13 @@ export function App({ onSelect, onProfile }: AppProps) {
     }
 
     if (key.escape) {
+      if (mode === "confirm-delete") {
+        setMode(deleteTarget?.returnMode ?? "list");
+        setDeleteTarget(undefined);
+        setError(undefined);
+        return;
+      }
+
       if (mode === "form") {
         if (entries.length === 0) {
           exit();
@@ -138,6 +152,28 @@ export function App({ onSelect, onProfile }: AppProps) {
     }
 
     if (mode === "load-error") {
+      return;
+    }
+
+    if (mode === "confirm-delete") {
+      if (input === "y" || input === "Y") {
+        if (deleteTarget) {
+          void performDelete(deleteTarget.index);
+          setDeleteTarget(undefined);
+        }
+
+        return;
+      }
+
+      if (input === "n" || input === "N" || key.return) {
+        if (deleteTarget) {
+          setMode(deleteTarget.returnMode);
+        }
+        setDeleteTarget(undefined);
+        setError(undefined);
+        return;
+      }
+
       return;
     }
 
@@ -190,6 +226,22 @@ export function App({ onSelect, onProfile }: AppProps) {
       return;
     }
 
+    if (key.ctrl && input === "d") {
+      const selected = results[selectedIndex];
+
+      if (selected) {
+        setError(undefined);
+        setDeleteTarget({
+          index: selected.originalIndex,
+          name: selected.entry.name,
+          returnMode: "list",
+        });
+        setMode("confirm-delete");
+      }
+
+      return;
+    }
+
     if (key.backspace || key.delete) {
       setQuery((current) => current.slice(0, -1));
       setSelectedIndex(0);
@@ -224,6 +276,17 @@ export function App({ onSelect, onProfile }: AppProps) {
       }
 
       void saveForm(form);
+      return;
+    }
+
+    if (key.ctrl && input === "d" && form.editIndex !== undefined) {
+      setError(undefined);
+      setDeleteTarget({
+        index: form.editIndex,
+        name: form.name,
+        returnMode: "form",
+      });
+      setMode("confirm-delete");
       return;
     }
 
@@ -299,6 +362,24 @@ export function App({ onSelect, onProfile }: AppProps) {
     }
   }
 
+  async function performDelete(index: number): Promise<void> {
+    const nextEntries = entries.filter((_, i) => i !== index);
+
+    try {
+      await savePathEntries(nextEntries);
+      setEntries(nextEntries);
+      setQuery("");
+      setSelectedIndex(0);
+      setDeleteTarget(undefined);
+      setForm(undefined);
+      setMode("list");
+    } catch (saveError) {
+      setError(
+        `Failed to save ${pathsJsonPath}: ${saveError instanceof Error ? saveError.message : String(saveError)}`,
+      );
+    }
+  }
+
   if (mode === "loading") {
     return <Text>Loading cdf...</Text>;
   }
@@ -316,6 +397,25 @@ export function App({ onSelect, onProfile }: AppProps) {
     );
   }
 
+  if (mode === "confirm-delete") {
+    if (!deleteTarget) {
+      return <Text>Deleting...</Text>;
+    }
+
+    return (
+      <Box flexDirection="column">
+        <Text bold>Delete entry</Text>
+        <Text>
+          Delete "{deleteTarget.name}"? ({paint("green", "y")}/{paint("red", "N")})
+        </Text>
+        <Text>
+          {paint("red", "Esc")}, {paint("red", "Enter")} or {paint("red", "n")} cancels.
+        </Text>
+        {error ? <Text color="red">{error}</Text> : null}
+      </Box>
+    );
+  }
+
   if (mode === "form" && form) {
     const duplicate = hasDuplicateEntry(
       entries,
@@ -329,6 +429,7 @@ export function App({ onSelect, onProfile }: AppProps) {
         <Text>
           {paint("green", "Enter")} moves forward or saves on the favorite field.{" "}
           {paint("red", "Esc")} cancels.
+          {form.kind === "edit" ? ` ${paint("red", "Ctrl+D")} deletes this entry.` : ""}
         </Text>
         <FormLine active={form.field === "name"} label="name" value={form.name} />
         <FormLine active={form.field === "path"} label="path" value={form.path} color="darkGray" />
@@ -391,7 +492,8 @@ function KeybindHelp() {
     <Box marginTop={1}>
       <Text>
         {paint("cyan", "↑/↓")} selects, {paint("green", "Enter")} confirms,{" "}
-        {paint("yellow", "Ctrl+E")} edits, {paint("red", "Esc")} exits.
+        {paint("yellow", "Ctrl+E")} edits, {paint("red", "Ctrl+D")} deletes, {paint("red", "Esc")}{" "}
+        exits.
       </Text>
     </Box>
   );
