@@ -45,9 +45,9 @@ Controls:
 
 ```text
 Type             Search saved directories
-Up/Down or j/k   Move selection
+Up/Down          Move selection
 Enter            Select a directory
-e                Edit selected entry
+Ctrl+E           Edit selected entry
 Esc              Exit
 ```
 
