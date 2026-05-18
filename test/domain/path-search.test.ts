@@ -18,70 +18,31 @@ describe("sortEntries", () => {
   });
 
   test("sorts favorites before non-favorites", () => {
-<<<<<<< Updated upstream
-    const entries = [
-      entry("b", "/b", false),
-      entry("a", "/a", true),
-    ];
-=======
     const entries = [entry("b", "/b", false), entry("a", "/a", true)];
->>>>>>> Stashed changes
     const result = sortEntries(entries);
     expect(result.map((r) => r.entry.isFavorite)).toEqual([true, false]);
   });
 
   test("sorts favorites alphabetically by name", () => {
-<<<<<<< Updated upstream
-    const entries = [
-      entry("c", "/c", true),
-      entry("a", "/a", true),
-      entry("b", "/b", true),
-    ];
-=======
     const entries = [entry("c", "/c", true), entry("a", "/a", true), entry("b", "/b", true)];
->>>>>>> Stashed changes
     const result = sortEntries(entries);
     expect(result.map((r) => r.entry.name)).toEqual(["a", "b", "c"]);
   });
 
   test("sorts non-favorites alphabetically by name", () => {
-<<<<<<< Updated upstream
-    const entries = [
-      entry("z", "/z"),
-      entry("m", "/m"),
-      entry("a", "/a"),
-    ];
-=======
     const entries = [entry("z", "/z"), entry("m", "/m"), entry("a", "/a")];
->>>>>>> Stashed changes
     const result = sortEntries(entries);
     expect(result.map((r) => r.entry.name)).toEqual(["a", "m", "z"]);
   });
 
   test("sorts case-insensitively", () => {
-<<<<<<< Updated upstream
-    const entries = [
-      entry("B", "/b"),
-      entry("a", "/a"),
-      entry("C", "/c"),
-    ];
-=======
     const entries = [entry("B", "/b"), entry("a", "/a"), entry("C", "/c")];
->>>>>>> Stashed changes
     const result = sortEntries(entries);
     expect(result.map((r) => r.entry.name)).toEqual(["a", "B", "C"]);
   });
 
   test("preserves originalIndex through mapping", () => {
-<<<<<<< Updated upstream
-    const entries = [
-      entry("b", "/b"),
-      entry("a", "/a"),
-      entry("c", "/c"),
-    ];
-=======
     const entries = [entry("b", "/b"), entry("a", "/a"), entry("c", "/c")];
->>>>>>> Stashed changes
     const result = sortEntries(entries);
     const indices = result.map((r) => r.originalIndex).sort((a, b) => a - b);
     expect(indices).toEqual([0, 1, 2]);
@@ -121,31 +82,19 @@ describe("searchEntries", () => {
   test("matches by name (case-insensitive)", () => {
     const result = searchEntries(entries, "project");
     expect(result).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(result[0]!.entry.name).toBe("My Project");
-=======
     expect(result[0]?.entry.name).toBe("My Project");
->>>>>>> Stashed changes
   });
 
   test("matches by name with different case", () => {
     const result = searchEntries(entries, "MY PROJECT");
     expect(result).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(result[0]!.entry.name).toBe("My Project");
-=======
     expect(result[0]?.entry.name).toBe("My Project");
->>>>>>> Stashed changes
   });
 
   test("matches by path when name does not match", () => {
     const result = searchEntries(entries, "etc");
     expect(result).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(result[0]!.entry.name).toBe("Config");
-=======
     expect(result[0]?.entry.name).toBe("Config");
->>>>>>> Stashed changes
   });
 
   test("returns name matches before path matches", () => {
@@ -155,13 +104,8 @@ describe("searchEntries", () => {
     ];
     const result = searchEntries(entriesWithOverlap, "downloads");
     expect(result).toHaveLength(2);
-<<<<<<< Updated upstream
-    expect(result[0]!.entry.name).toBe("downloads");
-    expect(result[1]!.entry.name).toBe("files");
-=======
     expect(result[0]?.entry.name).toBe("downloads");
     expect(result[1]?.entry.name).toBe("files");
->>>>>>> Stashed changes
   });
 
   test("returns empty array when nothing matches", () => {
@@ -172,31 +116,19 @@ describe("searchEntries", () => {
   test("matches by partial name", () => {
     const result = searchEntries(entries, "work");
     expect(result).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(result[0]!.entry.name).toBe("Work Docs");
-=======
     expect(result[0]?.entry.name).toBe("Work Docs");
->>>>>>> Stashed changes
   });
 
   test("matches multiple entries by common substring", () => {
     const result = searchEntries(entries, "do");
-<<<<<<< Updated upstream
     expect(result).toHaveLength(2);
-    expect(result.map((r) => r.entry.name).sort()).toEqual(["Downloads", "Work Docs"]);
-=======
     expect(result.map((r) => r.entry.name)).toEqual(["Downloads", "Work Docs"]);
->>>>>>> Stashed changes
   });
 
   test("trims the query before searching", () => {
     const result = searchEntries(entries, "  project  ");
     expect(result).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(result[0]!.entry.name).toBe("My Project");
-=======
     expect(result[0]?.entry.name).toBe("My Project");
->>>>>>> Stashed changes
   });
 });
 

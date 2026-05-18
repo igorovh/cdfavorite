@@ -1,10 +1,5 @@
-<<<<<<< Updated upstream
-import { afterAll, describe, expect, mock, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-=======
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
->>>>>>> Stashed changes
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -19,16 +14,13 @@ mock.module("../../src/infrastructure/config-paths", () => ({
 
 const { loadPathEntries, savePathEntries } = await import("../../src/infrastructure/storage");
 
-<<<<<<< Updated upstream
-=======
+afterAll(() => {
+  rmSync(tmpDir, { recursive: true, force: true });
+});
+
 beforeEach(() => {
   rmSync(pathsJson, { force: true });
   mkdirSync(configDir, { recursive: true });
-});
-
->>>>>>> Stashed changes
-afterAll(() => {
-  rmSync(tmpDir, { recursive: true, force: true });
 });
 
 describe("loadPathEntries", () => {
@@ -84,24 +76,14 @@ describe("loadPathEntries", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.entries).toHaveLength(1);
-<<<<<<< Updated upstream
-      expect(result.entries[0]!.name).toBe("Valid");
-=======
       expect(result.entries[0]?.name).toBe("Valid");
->>>>>>> Stashed changes
       expect(result.warning).toBeDefined();
       expect(result.warning).toContain("Skipped invalid entries");
     }
   });
 
   test("returns no warning when all entries are valid", async () => {
-<<<<<<< Updated upstream
-    const entries = [
-      { name: "Valid", path: "/valid", isFavorite: false },
-    ];
-=======
     const entries = [{ name: "Valid", path: "/valid", isFavorite: false }];
->>>>>>> Stashed changes
     writeFileSync(pathsJson, JSON.stringify(entries), "utf8");
     const result = await loadPathEntries();
     expect(result.ok).toBe(true);
@@ -131,13 +113,7 @@ describe("loadPathEntries", () => {
 
 describe("savePathEntries", () => {
   test("saves entries and they can be loaded back (round-trip)", async () => {
-<<<<<<< Updated upstream
-    const entries = [
-      { name: "Roundtrip", path: "/roundtrip", isFavorite: true },
-    ];
-=======
     const entries = [{ name: "Roundtrip", path: "/roundtrip", isFavorite: true }];
->>>>>>> Stashed changes
     await savePathEntries(entries);
     const result = await loadPathEntries();
     expect(result.ok).toBe(true);
@@ -147,21 +123,10 @@ describe("savePathEntries", () => {
   });
 
   test("overwrites existing entries", async () => {
-<<<<<<< Updated upstream
-    const firstEntries = [
-      { name: "First", path: "/first", isFavorite: false },
-    ];
-    await savePathEntries(firstEntries);
-
-    const secondEntries = [
-      { name: "Second", path: "/second", isFavorite: true },
-    ];
-=======
     const firstEntries = [{ name: "First", path: "/first", isFavorite: false }];
     await savePathEntries(firstEntries);
 
     const secondEntries = [{ name: "Second", path: "/second", isFavorite: true }];
->>>>>>> Stashed changes
     await savePathEntries(secondEntries);
 
     const result = await loadPathEntries();

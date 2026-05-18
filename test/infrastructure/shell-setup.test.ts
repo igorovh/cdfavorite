@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-<<<<<<< Updated upstream
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-=======
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
->>>>>>> Stashed changes
 import { join } from "node:path";
 import {
   bashOrZshBlock,
@@ -60,22 +55,14 @@ describe("getShellConfigTargets", () => {
     const targets = getShellConfigTargets();
     const bashTarget = targets.find((t) => t.shell === "bash");
     expect(bashTarget).toBeDefined();
-<<<<<<< Updated upstream
-    expect(bashTarget!.path).toEndWith(".bashrc");
-=======
     expect(bashTarget?.path).toEndWith(".bashrc");
->>>>>>> Stashed changes
   });
 
   test("contains zsh entry with correct path", () => {
     const targets = getShellConfigTargets();
     const zshTarget = targets.find((t) => t.shell === "zsh");
     expect(zshTarget).toBeDefined();
-<<<<<<< Updated upstream
-    expect(zshTarget!.path).toEndWith(".zshrc");
-=======
     expect(zshTarget?.path).toEndWith(".zshrc");
->>>>>>> Stashed changes
   });
 
   test("each target has shell, path, and block", () => {
@@ -92,11 +79,7 @@ describe("getShellConfigTargets", () => {
     const targets = getShellConfigTargets();
     const bashTarget = targets.find((t) => t.shell === "bash");
     const zshTarget = targets.find((t) => t.shell === "zsh");
-<<<<<<< Updated upstream
-    expect(bashTarget!.block).toBe(zshTarget!.block);
-=======
     expect(bashTarget?.block).toBe(zshTarget?.block);
->>>>>>> Stashed changes
   });
 
   test("nushell block differs from bash/zsh block", () => {
@@ -104,11 +87,7 @@ describe("getShellConfigTargets", () => {
     const bashTarget = targets.find((t) => t.shell === "bash");
     const nuTargets = targets.filter((t) => t.shell === "nushell");
     for (const nuTarget of nuTargets) {
-<<<<<<< Updated upstream
-      expect(nuTarget.block).not.toBe(bashTarget!.block);
-=======
       expect(nuTarget.block).not.toBe(bashTarget?.block);
->>>>>>> Stashed changes
     }
   });
 
@@ -122,22 +101,14 @@ describe("getShellConfigTargets", () => {
 
   test("all paths are absolute", () => {
     for (const target of getShellConfigTargets()) {
-<<<<<<< Updated upstream
-      expect(target.path).toStartWith(homedir());
-=======
       expect(target.path).toMatch(/^(\/|[A-Za-z]:\\)/);
->>>>>>> Stashed changes
       expect(target.path).not.toContain("..");
     }
   });
 });
 
 describe("getAvailableShellConfigTargets", () => {
-<<<<<<< Updated upstream
-  test("returns only targets whose config files exist", () => {
-=======
   test("emits well-formed targets that exist on disk", () => {
->>>>>>> Stashed changes
     const targets = getAvailableShellConfigTargets();
     for (const target of targets) {
       expect(target).toHaveProperty("shell");
@@ -157,11 +128,7 @@ describe("installShellWrappers", () => {
   });
 
   test("returns skipped when config file does not exist", async () => {
-<<<<<<< Updated upstream
-    tmpDir = mkdtempSync(join(homedir(), "cdf-test-shell-"));
-=======
     tmpDir = mkdtempSync(join(tmpdir(), "cdf-test-shell-"));
->>>>>>> Stashed changes
     const results = await installShellWrappers([
       {
         shell: "bash",
@@ -170,19 +137,11 @@ describe("installShellWrappers", () => {
       },
     ]);
     expect(results).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(results[0]!.status).toBe("skipped");
-  });
-
-  test("installs block when config file exists and is empty", async () => {
-    tmpDir = mkdtempSync(join(homedir(), "cdf-test-shell-"));
-=======
     expect(results[0]?.status).toBe("skipped");
   });
 
   test("installs block when config file exists and is empty", async () => {
     tmpDir = mkdtempSync(join(tmpdir(), "cdf-test-shell-"));
->>>>>>> Stashed changes
     const configPath = join(tmpDir, "testrc");
     writeFileSync(configPath, "", "utf8");
 
@@ -194,15 +153,6 @@ describe("installShellWrappers", () => {
       },
     ]);
     expect(results).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(results[0]!.status).toBe("installed");
-  });
-
-  test("updates block when config file already has a cdf block", async () => {
-    tmpDir = mkdtempSync(join(homedir(), "cdf-test-shell-"));
-    const configPath = join(tmpDir, "testrc");
-    writeFileSync(configPath, "echo hello\n# >>> cdf >>>\nold block\n# <<< cdf <<<\necho world\n", "utf8");
-=======
     expect(results[0]?.status).toBe("installed");
     expect(readFileSync(configPath, "utf8")).toBe(`${bashOrZshBlock()}\n`);
   });
@@ -215,7 +165,6 @@ describe("installShellWrappers", () => {
       "echo hello\n# >>> cdf >>>\nold block\n# <<< cdf <<<\necho world\n",
       "utf8",
     );
->>>>>>> Stashed changes
 
     const newBlock = bashOrZshBlock();
     const results = await installShellWrappers([
@@ -226,13 +175,6 @@ describe("installShellWrappers", () => {
       },
     ]);
     expect(results).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(results[0]!.status).toBe("updated");
-  });
-
-  test("installs block into non-empty config file without existing cdf block", async () => {
-    tmpDir = mkdtempSync(join(homedir(), "cdf-test-shell-"));
-=======
     expect(results[0]?.status).toBe("updated");
     const content = readFileSync(configPath, "utf8");
     expect(content).toContain("echo hello");
@@ -243,7 +185,6 @@ describe("installShellWrappers", () => {
 
   test("installs block into non-empty config file without existing cdf block", async () => {
     tmpDir = mkdtempSync(join(tmpdir(), "cdf-test-shell-"));
->>>>>>> Stashed changes
     const configPath = join(tmpDir, "testrc");
     writeFileSync(configPath, "echo hello\n", "utf8");
 
@@ -255,19 +196,11 @@ describe("installShellWrappers", () => {
       },
     ]);
     expect(results).toHaveLength(1);
-<<<<<<< Updated upstream
-    expect(results[0]!.status).toBe("installed");
-  });
-
-  test("installs multiple shell wrappers", async () => {
-    tmpDir = mkdtempSync(join(homedir(), "cdf-test-shell-"));
-=======
     expect(results[0]?.status).toBe("installed");
   });
 
   test("installs multiple shell wrappers", async () => {
     tmpDir = mkdtempSync(join(tmpdir(), "cdf-test-shell-"));
->>>>>>> Stashed changes
     const bashPath = join(tmpDir, ".bashrc");
     const zshPath = join(tmpDir, ".zshrc");
     writeFileSync(bashPath, "", "utf8");
@@ -278,12 +211,7 @@ describe("installShellWrappers", () => {
       { shell: "zsh", path: zshPath, block: bashOrZshBlock() },
     ]);
     expect(results).toHaveLength(2);
-<<<<<<< Updated upstream
-    expect(results[0]!.status).toBe("installed");
-    expect(results[1]!.status).toBe("installed");
-=======
     expect(results[0]?.status).toBe("installed");
     expect(results[1]?.status).toBe("installed");
->>>>>>> Stashed changes
   });
 });
