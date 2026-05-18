@@ -1,4 +1,4 @@
-# cdf
+# cdf-cli
 
 Change Directory Favorites (`cdf`) is an interactive Bun CLI for jumping to saved directories.
   
