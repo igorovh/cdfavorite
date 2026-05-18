@@ -3,6 +3,7 @@ import { isPathEntry } from "../../src/domain/path-entry";
 
 describe("isPathEntry", () => {
   test("returns true for a valid PathEntry", () => {
+<<<<<<< Updated upstream
     expect(
       isPathEntry({ name: "My Project", path: "/home/user/project", isFavorite: false }),
     ).toBe(true);
@@ -24,6 +25,23 @@ describe("isPathEntry", () => {
     expect(
       isPathEntry({ name: "  hello  ", path: "/p", isFavorite: false }),
     ).toBe(true);
+=======
+    expect(isPathEntry({ name: "My Project", path: "/home/user/project", isFavorite: false })).toBe(
+      true,
+    );
+  });
+
+  test("returns true for a valid PathEntry with isFavorite true", () => {
+    expect(isPathEntry({ name: "work", path: "/work", isFavorite: true })).toBe(true);
+  });
+
+  test("returns true for an entry with extra properties", () => {
+    expect(isPathEntry({ name: "a", path: "/a", isFavorite: false, extra: 1 })).toBe(true);
+  });
+
+  test("returns true when name has leading/trailing whitespace but non-empty trimmed", () => {
+    expect(isPathEntry({ name: "  hello  ", path: "/p", isFavorite: false })).toBe(true);
+>>>>>>> Stashed changes
   });
 
   test("returns false for null", () => {
