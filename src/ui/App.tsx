@@ -130,10 +130,9 @@ export function App({ onSelect, onProfile }: AppProps) {
 
     if (key.escape) {
       if (mode === "confirm-delete") {
-        if (deleteTarget) {
-          setMode(deleteTarget.returnMode);
-        }
+        setMode(deleteTarget?.returnMode ?? "list");
         setDeleteTarget(undefined);
+        setError(undefined);
         return;
       }
 
@@ -160,12 +159,19 @@ export function App({ onSelect, onProfile }: AppProps) {
       if (input === "y" || input === "Y") {
         if (deleteTarget) {
           void performDelete(deleteTarget.index);
+          setDeleteTarget(undefined);
         }
-      } else if (input === "n" || input === "N") {
+
+        return;
+      }
+
+      if (input === "n" || input === "N" || key.return) {
         if (deleteTarget) {
           setMode(deleteTarget.returnMode);
         }
         setDeleteTarget(undefined);
+        setError(undefined);
+        return;
       }
 
       return;
@@ -224,6 +230,7 @@ export function App({ onSelect, onProfile }: AppProps) {
       const selected = results[selectedIndex];
 
       if (selected) {
+        setError(undefined);
         setDeleteTarget({
           index: selected.originalIndex,
           name: selected.entry.name,
@@ -273,6 +280,7 @@ export function App({ onSelect, onProfile }: AppProps) {
     }
 
     if (key.ctrl && input === "d" && form.editIndex !== undefined) {
+      setError(undefined);
       setDeleteTarget({
         index: form.editIndex,
         name: form.name,
@@ -389,7 +397,11 @@ export function App({ onSelect, onProfile }: AppProps) {
     );
   }
 
-  if (mode === "confirm-delete" && deleteTarget) {
+  if (mode === "confirm-delete") {
+    if (!deleteTarget) {
+      return <Text>Deleting...</Text>;
+    }
+
     return (
       <Box flexDirection="column">
         <Text bold>Delete entry</Text>
@@ -397,7 +409,7 @@ export function App({ onSelect, onProfile }: AppProps) {
           Delete "{deleteTarget.name}"? ({paint("green", "y")}/{paint("red", "N")})
         </Text>
         <Text>
-          {paint("red", "Esc")} or {paint("red", "n")} cancels.
+          {paint("red", "Esc")}, {paint("red", "Enter")} or {paint("red", "n")} cancels.
         </Text>
         {error ? <Text color="red">{error}</Text> : null}
       </Box>
