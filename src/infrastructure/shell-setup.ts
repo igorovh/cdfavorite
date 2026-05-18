@@ -1,7 +1,7 @@
-import {existsSync} from "node:fs";
-import {readFile, writeFile} from "node:fs/promises";
-import {homedir} from "node:os";
-import {join} from "node:path";
+import { existsSync } from "node:fs";
+import { copyFile, readFile, rename, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 const startMarker = "# >>> cdf >>>";
 const endMarker = "# <<< cdf <<<";
@@ -80,8 +80,8 @@ ${endMarker}`;
 
 export function nushellBlock(): string {
   return `${startMarker}
-def --env cdf [] {
-    let target = (^cdf-run | str trim)
+def --env cdf [...args] {
+    let target = (^cdf-run ...$args | str trim)
 
     if ($target | is-not-empty) {
         cd $target
@@ -92,7 +92,7 @@ ${endMarker}`;
 
 async function installShellWrapper(target: ShellConfigTarget): Promise<SetupResult> {
   if (!existsSync(target.path)) {
-    return {shell: target.shell, path: target.path, status: "skipped"};
+    return { shell: target.shell, path: target.path, status: "skipped" };
   }
 
   try {
@@ -100,9 +100,10 @@ async function installShellWrapper(target: ShellConfigTarget): Promise<SetupResu
     const nextContent = upsertMarkedBlock(existingContent, target.block);
     const status = nextContent.replaced ? "updated" : "installed";
 
-    await writeFile(target.path, nextContent.content, "utf8");
+    await backupFile(target.path);
+    await writeFileAtomically(target.path, nextContent.content);
 
-    return {shell: target.shell, path: target.path, status};
+    return { shell: target.shell, path: target.path, status };
   } catch (error) {
     return {
       shell: target.shell,
@@ -113,7 +114,7 @@ async function installShellWrapper(target: ShellConfigTarget): Promise<SetupResu
   }
 }
 
-function upsertMarkedBlock(content: string, block: string): {content: string; replaced: boolean} {
+function upsertMarkedBlock(content: string, block: string): { content: string; replaced: boolean } {
   const startIndex = content.indexOf(startMarker);
   const endIndex = content.indexOf(endMarker, startIndex + startMarker.length);
 
@@ -123,18 +124,30 @@ function upsertMarkedBlock(content: string, block: string): {content: string; re
     const contentAfter = content.slice(afterEndIndex).replace(/^\n*/, "");
     const sections = [contentBefore, block, contentAfter].filter((section) => section.length > 0);
 
-    return {content: `${sections.join("\n\n")}\n`, replaced: true};
+    return { content: `${sections.join("\n")}\n`, replaced: true };
   }
 
   const separator = content.endsWith("\n") || content.length === 0 ? "" : "\n";
 
   if (content.length === 0) {
-    return {content: `${block}\n`, replaced: false};
+    return { content: `${block}\n`, replaced: false };
   }
 
-  return {content: `${content}${separator}\n${block}\n`, replaced: false};
+  return { content: `${content}${separator}\n${block}\n`, replaced: false };
 }
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+async function backupFile(path: string): Promise<void> {
+  const backupPath = `${path}.cdf-backup-${Date.now()}`;
+  await copyFile(path, backupPath);
+}
+
+async function writeFileAtomically(path: string, content: string): Promise<void> {
+  const temporaryPath = `${path}.cdf-${process.pid}.${Date.now()}.tmp`;
+
+  await writeFile(temporaryPath, content, "utf8");
+  await rename(temporaryPath, path);
 }

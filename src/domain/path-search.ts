@@ -1,4 +1,4 @@
-import type {PathEntry} from "./path-entry";
+import type { PathEntry } from "./path-entry";
 
 export type SearchResult = {
   entry: PathEntry;
@@ -7,7 +7,7 @@ export type SearchResult = {
 
 export function sortEntries(entries: PathEntry[]): SearchResult[] {
   return entries
-    .map((entry, originalIndex) => ({entry, originalIndex}))
+    .map((entry, originalIndex) => ({ entry, originalIndex }))
     .sort((left, right) => {
       if (left.entry.isFavorite !== right.entry.isFavorite) {
         return left.entry.isFavorite ? -1 : 1;

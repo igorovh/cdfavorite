@@ -1,16 +1,17 @@
-import {existsSync} from "node:fs";
-import {join} from "node:path";
+import { accessSync, constants, statSync } from "node:fs";
+import { join } from "node:path";
 
 export function findCommandOnPath(commandName: string): string | undefined {
   const pathValue = process.env.PATH ?? process.env.Path ?? "";
   const pathDirectories = pathValue.split(process.platform === "win32" ? ";" : ":").filter(Boolean);
-  const extensions = process.platform === "win32" ? getWindowsExecutableExtensions(commandName) : [""];
+  const extensions =
+    process.platform === "win32" ? getWindowsExecutableExtensions(commandName) : [""];
 
   for (const directory of pathDirectories) {
     for (const extension of extensions) {
       const candidate = join(directory, `${commandName}${extension}`);
 
-      if (existsSync(candidate)) {
+      if (isRunnableFile(candidate)) {
         return candidate;
       }
     }
@@ -19,7 +20,29 @@ export function findCommandOnPath(commandName: string): string | undefined {
   return undefined;
 }
 
-export function isDirectoryOnPath(directory: string, pathValue = process.env.PATH ?? process.env.Path ?? ""): boolean {
+function isRunnableFile(path: string): boolean {
+  try {
+    const stat = statSync(path);
+
+    if (!stat.isFile()) {
+      return false;
+    }
+
+    if (process.platform === "win32") {
+      return true;
+    }
+
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function isDirectoryOnPath(
+  directory: string,
+  pathValue = process.env.PATH ?? process.env.Path ?? "",
+): boolean {
   const delimiter = process.platform === "win32" ? ";" : ":";
   const normalizedDirectory = normalizePathForComparison(directory);
 
@@ -34,7 +57,11 @@ function getWindowsExecutableExtensions(commandName: string): string[] {
     return [""];
   }
 
-  const pathExtensions = process.env.PATHEXT?.split(";").filter(Boolean) ?? [".EXE", ".CMD", ".BAT"];
+  const pathExtensions = process.env.PATHEXT?.split(";").filter(Boolean) ?? [
+    ".EXE",
+    ".CMD",
+    ".BAT",
+  ];
   return ["", ...pathExtensions.map((extension) => extension.toLowerCase())];
 }
 

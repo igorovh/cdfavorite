@@ -1,10 +1,9 @@
 #!/usr/bin/env bun
-import React from "react";
-import {render} from "ink";
+import { render } from "ink";
 
-import {findCommandOnPath} from "./infrastructure/command-path";
-import {getAvailableShellConfigTargets} from "./infrastructure/shell-setup";
-import {SetupApp} from "./ui/SetupApp";
+import { findCommandOnPath } from "./infrastructure/command-path";
+import { getAvailableShellConfigTargets } from "./infrastructure/shell-setup";
+import { SetupApp } from "./ui/SetupApp";
 
 if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== "function") {
   console.error("cdf-setup requires an interactive terminal with raw mode support.");

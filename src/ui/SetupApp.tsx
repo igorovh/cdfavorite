@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-import {Box, Text, useApp, useInput} from "ink";
+import { Box, Text, useApp, useInput } from "ink";
+import { useState } from "react";
 
 import {
   bashOrZshBlock,
@@ -16,11 +16,13 @@ type SetupAppProps = {
   cdfRunPath?: string;
 };
 
-export function SetupApp({targets, cdfRunPath}: SetupAppProps) {
-  const {exit} = useApp();
+export function SetupApp({ targets, cdfRunPath }: SetupAppProps) {
+  const { exit } = useApp();
   const [mode, setMode] = useState<SetupMode>("select");
   const [cursorIndex, setCursorIndex] = useState(0);
-  const [selectedPaths, setSelectedPaths] = useState(() => new Set(targets.map((target) => target.path)));
+  const [selectedPaths, setSelectedPaths] = useState(
+    () => new Set(targets.map((target) => target.path)),
+  );
   const [results, setResults] = useState<SetupResult[]>([]);
 
   useInput((input, key) => {
@@ -106,13 +108,12 @@ export function SetupApp({targets, cdfRunPath}: SetupAppProps) {
     return (
       <Box flexDirection="column">
         <Text bold>cdf-setup</Text>
-        {cdfRunPath ? (
-          <Text color="green">Found cdf-run: {cdfRunPath}</Text>
-        ) : (
-          <Text color="yellow">cdf-run was not found on PATH. Run `bun run install-global`, open a new terminal, then run `cdf-setup` again.</Text>
-        )}
+        <CdfRunPathStatus cdfRunPath={cdfRunPath} />
         <Text color="yellow">No existing Bash, Zsh, or Nushell config files were found.</Text>
-        <Text>No config files were created automatically. Add the wrapper manually if you want to use it.</Text>
+        <Text>
+          No config files were created automatically. Add the wrapper manually if you want to use
+          it.
+        </Text>
         <Box flexDirection="column" marginTop={1}>
           <Text bold>Bash/Zsh</Text>
           {bashOrZshSnippet.split("\n").map((line, index) => (
@@ -134,11 +135,7 @@ export function SetupApp({targets, cdfRunPath}: SetupAppProps) {
     return (
       <Box flexDirection="column">
         <Text bold>cdf-setup</Text>
-        {cdfRunPath ? (
-          <Text color="green">Found cdf-run: {cdfRunPath}</Text>
-        ) : (
-          <Text color="yellow">cdf-run was not found on PATH. The installed wrapper will not work until cdf-run is globally available.</Text>
-        )}
+        <CdfRunPathStatus cdfRunPath={cdfRunPath} />
         <Text>Installing wrappers...</Text>
       </Box>
     );
@@ -148,14 +145,15 @@ export function SetupApp({targets, cdfRunPath}: SetupAppProps) {
     return (
       <Box flexDirection="column">
         <Text bold>cdf-setup complete</Text>
-        {cdfRunPath ? (
-          <Text color="green">Found cdf-run: {cdfRunPath}</Text>
-        ) : (
-          <Text color="yellow">cdf-run was not found on PATH. Run `bun run install-global`, open a new terminal, then run `cdf-setup` again.</Text>
-        )}
-        {results.length === 0 ? <Text color="yellow">Nothing selected. No configuration was changed.</Text> : null}
+        <CdfRunPathStatus cdfRunPath={cdfRunPath} />
+        {results.length === 0 ? (
+          <Text color="yellow">Nothing selected. No configuration was changed.</Text>
+        ) : null}
         {results.map((result) => (
-          <Text key={`${result.shell}:${result.path}`} color={result.status === "failed" ? "red" : undefined}>
+          <Text
+            key={`${result.shell}:${result.path}`}
+            color={result.status === "failed" ? "red" : undefined}
+          >
             {formatResult(result)}
           </Text>
         ))}
@@ -170,12 +168,10 @@ export function SetupApp({targets, cdfRunPath}: SetupAppProps) {
   return (
     <Box flexDirection="column">
       <Text bold>cdf-setup</Text>
-      {cdfRunPath ? (
-        <Text color="green">Found cdf-run: {cdfRunPath}</Text>
-      ) : (
-        <Text color="yellow">cdf-run was not found on PATH. Install globally first, otherwise the wrapper cannot run it.</Text>
-      )}
-      <Text>Select the shell configurations where the `cdf` wrapper should be installed or updated.</Text>
+      <CdfRunPathStatus cdfRunPath={cdfRunPath} />
+      <Text>
+        Select the shell configurations where the `cdf` wrapper should be installed or updated.
+      </Text>
       <Text color="gray">↑/↓ or j/k selects, Space toggles, Enter installs, Esc cancels.</Text>
       <Box flexDirection="column" marginTop={1}>
         {targets.map((target, index) => {
@@ -184,12 +180,26 @@ export function SetupApp({targets, cdfRunPath}: SetupAppProps) {
 
           return (
             <Text key={`${target.shell}:${target.path}`} color={active ? "cyan" : undefined}>
-              {active ? "> " : "  "}[{selected ? "x" : " "}] {target.shell} <Text color="gray">{target.path}</Text>
+              {active ? "> " : "  "}[{selected ? "x" : " "}] {target.shell}{" "}
+              <Text color="gray">{target.path}</Text>
             </Text>
           );
         })}
       </Box>
     </Box>
+  );
+}
+
+function CdfRunPathStatus({ cdfRunPath }: { cdfRunPath?: string }) {
+  if (cdfRunPath) {
+    return <Text color="green">Found cdf-run: {cdfRunPath}</Text>;
+  }
+
+  return (
+    <Text color="yellow">
+      cdf-run was not found on PATH. Ensure Bun's global bin directory is on PATH or reinstall with
+      `bun i -g cdf-cli`.
+    </Text>
   );
 }
 

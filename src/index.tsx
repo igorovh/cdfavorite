@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 const startedAt = performance.now();
-const profileStartup = process.argv.includes("--profile-startup") || process.env.CDF_PROFILE === "1";
+const profileStartup =
+  process.argv.includes("--profile-startup") || process.env.CDF_PROFILE === "1";
 const profileExit = process.argv.includes("--profile-exit");
 
 function profile(event: string): void {
@@ -16,13 +17,15 @@ profile("process started");
 
 if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== "function") {
   console.error("cdf-run requires an interactive terminal with raw mode support.");
-  console.error("Run `cdf-run` or the `cdf` wrapper directly in a terminal, not through a non-interactive runner.");
+  console.error(
+    "Run `cdf-run` or the `cdf` wrapper directly in a terminal, not through a non-interactive runner.",
+  );
   process.exit(1);
 }
 
 profile("tty checked");
 
-const [{default: React}, {render}, {App}] = await Promise.all([
+const [{ default: React }, { render }, { App }] = await Promise.all([
   import("react"),
   import("ink"),
   import("./ui/App"),

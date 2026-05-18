@@ -13,7 +13,9 @@ export function isPathEntry(value: unknown): value is PathEntry {
 
   return (
     typeof entry.name === "string" &&
+    entry.name.trim().length > 0 &&
     typeof entry.path === "string" &&
+    entry.path.trim().length > 0 &&
     typeof entry.isFavorite === "boolean"
   );
 }

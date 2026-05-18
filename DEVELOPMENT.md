@@ -24,6 +24,18 @@ Typecheck:
 bun run typecheck
 ```
 
+Lint & format (check only):
+
+```bash
+bun run biome:check
+```
+
+Lint & format (auto-fix):
+
+```bash
+bun run biome:fix
+```
+
 ## Standalone Executables
 
 Build local standalone executables:
@@ -35,8 +47,10 @@ bun run build
 Output:
 
 ```text
-dist/cdf-run.exe
-dist/cdf-setup.exe
+dist/cdf-run.exe       # Windows
+dist/cdf-setup.exe     # Windows
+dist/cdf-run           # macOS/Linux
+dist/cdf-setup         # macOS/Linux
 ```
 
 Optional local Windows-style standalone install:

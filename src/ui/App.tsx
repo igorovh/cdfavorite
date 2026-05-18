@@ -1,12 +1,12 @@
-import React, {useEffect, useMemo, useState} from "react";
-import {Box, Text, useApp, useInput, type Key} from "ink";
+import { Box, type Key, Text, useApp, useInput } from "ink";
+import { useEffect, useMemo, useState } from "react";
 
-import type {PathEntry} from "../domain/path-entry";
-import {hasDuplicateEntry, searchEntries, type SearchResult} from "../domain/path-search";
-import {loadPathEntries, savePathEntries} from "../infrastructure/storage";
-import {pathsJsonPath} from "../infrastructure/config-paths";
+import type { PathEntry } from "../domain/path-entry";
+import { hasDuplicateEntry, type SearchResult, searchEntries } from "../domain/path-search";
+import { pathsJsonPath } from "../infrastructure/config-paths";
+import { loadPathEntries, savePathEntries } from "../infrastructure/storage";
 
-type Mode = "loading" | "list" | "form";
+type Mode = "loading" | "load-error" | "list" | "form";
 type FormKind = "add" | "edit";
 type FormField = "name" | "path" | "favorite";
 
@@ -25,6 +25,7 @@ type AppProps = {
 };
 
 const addOptionLabel = "➕ Add current directory";
+const formFields: FormField[] = ["name", "path", "favorite"];
 const ansiCodes = {
   cyan: "\u001B[36m",
   darkGray: "\u001B[90m",
@@ -34,10 +35,12 @@ const ansiCodes = {
   yellow: "\u001B[33m",
 } as const;
 type AnsiColor = Exclude<keyof typeof ansiCodes, "reset">;
-const ansiColorsEnabled = process.argv.includes("--force-color") || (!process.argv.includes("--no-color") && !("NO_COLOR" in process.env));
+const ansiColorsEnabled =
+  process.argv.includes("--force-color") ||
+  (!process.argv.includes("--no-color") && !("NO_COLOR" in process.env));
 
-export function App({onSelect, onProfile}: AppProps) {
-  const {exit} = useApp();
+export function App({ onSelect, onProfile }: AppProps) {
+  const { exit } = useApp();
   const [mode, setMode] = useState<Mode>("loading");
   const [entries, setEntries] = useState<PathEntry[]>([]);
   const [query, setQuery] = useState("");
@@ -55,22 +58,39 @@ export function App({onSelect, onProfile}: AppProps) {
 
     onProfile?.("storage load started");
 
-    void loadPathEntries().then((result) => {
-      if (!mounted) {
-        return;
-      }
+    void loadPathEntries()
+      .then((result) => {
+        if (!mounted) {
+          return;
+        }
 
-      onProfile?.(`storage loaded (${result.entries.length} entries)`);
-      setEntries(result.entries);
-      setWarning(result.warning);
+        if (!result.ok) {
+          onProfile?.("storage load failed");
+          setError(result.error);
+          setMode("load-error");
+          return;
+        }
 
-      if (result.entries.length === 0) {
-        setForm(createAddForm());
-        setMode("form");
-      } else {
-        setMode("list");
-      }
-    });
+        onProfile?.(`storage loaded (${result.entries.length} entries)`);
+        setEntries(result.entries);
+        setWarning(result.warning);
+
+        if (result.entries.length === 0) {
+          setForm(createAddForm());
+          setMode("form");
+        } else {
+          setMode("list");
+        }
+      })
+      .catch((loadError: unknown) => {
+        if (!mounted) {
+          return;
+        }
+
+        onProfile?.("storage load rejected");
+        setError(`Failed to initialize storage: ${formatError(loadError)}`);
+        setMode("load-error");
+      });
 
     return () => {
       mounted = false;
@@ -97,8 +117,6 @@ export function App({onSelect, onProfile}: AppProps) {
   }, [mode, query]);
 
   useInput((input, key) => {
-    setError(undefined);
-
     if (mode === "loading") {
       return;
     }
@@ -119,6 +137,12 @@ export function App({onSelect, onProfile}: AppProps) {
       return;
     }
 
+    if (mode === "load-error") {
+      return;
+    }
+
+    setError(undefined);
+
     if (mode === "form") {
       handleFormInput(input, key);
       return;
@@ -128,12 +152,12 @@ export function App({onSelect, onProfile}: AppProps) {
   });
 
   function handleListInput(input: string, key: Key): void {
-    if (key.upArrow || input === "k") {
+    if (key.upArrow) {
       setSelectedIndex((current) => (current <= 0 ? totalListItems - 1 : current - 1));
       return;
     }
 
-    if (key.downArrow || input === "j") {
+    if (key.downArrow) {
       setSelectedIndex((current) => (current + 1 >= totalListItems ? 0 : current + 1));
       return;
     }
@@ -155,7 +179,7 @@ export function App({onSelect, onProfile}: AppProps) {
       return;
     }
 
-    if (input === "e") {
+    if (key.ctrl && input === "e") {
       const selected = results[selectedIndex];
 
       if (selected) {
@@ -184,18 +208,18 @@ export function App({onSelect, onProfile}: AppProps) {
     }
 
     if (key.tab || key.downArrow) {
-      setForm({...form, field: nextField(form.field)});
+      setForm({ ...form, field: nextField(form.field) });
       return;
     }
 
     if (key.upArrow) {
-      setForm({...form, field: previousField(form.field)});
+      setForm({ ...form, field: previousField(form.field) });
       return;
     }
 
     if (key.return) {
       if (form.field !== "favorite") {
-        setForm({...form, field: nextField(form.field)});
+        setForm({ ...form, field: nextField(form.field) });
         return;
       }
 
@@ -204,21 +228,19 @@ export function App({onSelect, onProfile}: AppProps) {
     }
 
     if (form.field === "favorite") {
-      if (key.leftArrow || key.rightArrow || input === "a" || input === "d") {
-        setForm({...form, isFavorite: !form.isFavorite});
+      if (key.leftArrow || key.rightArrow || ["a", "d", " "].includes(input)) {
+        setForm({ ...form, isFavorite: !form.isFavorite });
         return;
       }
 
       if (["t", "T", "y", "Y"].includes(input)) {
-        setForm({...form, isFavorite: true});
+        setForm({ ...form, isFavorite: true });
+        return;
       }
 
       if (["n", "N"].includes(input)) {
-        setForm({...form, isFavorite: false});
-      }
-
-      if (input === " ") {
-        setForm({...form, isFavorite: !form.isFavorite});
+        setForm({ ...form, isFavorite: false });
+        return;
       }
 
       return;
@@ -243,13 +265,13 @@ export function App({onSelect, onProfile}: AppProps) {
 
     if (candidate.name.length === 0) {
       setError("Name cannot be empty.");
-      setForm({...currentForm, field: "name"});
+      setForm({ ...currentForm, field: "name" });
       return;
     }
 
     if (candidate.path.length === 0) {
       setError("Path cannot be empty.");
-      setForm({...currentForm, field: "path"});
+      setForm({ ...currentForm, field: "path" });
       return;
     }
 
@@ -281,23 +303,43 @@ export function App({onSelect, onProfile}: AppProps) {
     return <Text>Loading cdf...</Text>;
   }
 
+  if (mode === "load-error") {
+    return (
+      <Box flexDirection="column">
+        <Text color="red" bold>
+          Failed to load cdf storage
+        </Text>
+        <Text color="red">{error}</Text>
+        <Text>Fix the storage file manually or move it aside before saving new entries.</Text>
+        <Text>{paint("red", "Esc")} exits.</Text>
+      </Box>
+    );
+  }
+
   if (mode === "form" && form) {
     const duplicate = hasDuplicateEntry(
       entries,
-      {name: form.name, path: form.path, isFavorite: form.isFavorite},
+      { name: form.name, path: form.path, isFavorite: form.isFavorite },
       form.editIndex,
     );
 
     return (
       <Box flexDirection="column">
         <Text bold>{form.kind === "add" ? "Add current directory" : "Edit directory"}</Text>
-        <Text>{paint("green", "Enter")} moves forward or saves on the favorite field. {paint("red", "Esc")} cancels.</Text>
+        <Text>
+          {paint("green", "Enter")} moves forward or saves on the favorite field.{" "}
+          {paint("red", "Esc")} cancels.
+        </Text>
         <FormLine active={form.field === "name"} label="name" value={form.name} />
         <FormLine active={form.field === "path"} label="path" value={form.path} color="darkGray" />
         <Text>
           {form.field === "favorite" ? "> " : "  "}favorite: {form.isFavorite ? "y" : "n"}
         </Text>
-        {duplicate ? <Text color="yellow">Warning: this name or path already exists. You can still save it.</Text> : null}
+        {duplicate ? (
+          <Text color="yellow">
+            Warning: this name or path already exists. You can still save it.
+          </Text>
+        ) : null}
         {warning ? <Text color="yellow">{warning}</Text> : null}
         {error ? <Text color="red">{error}</Text> : null}
       </Box>
@@ -312,7 +354,11 @@ export function App({onSelect, onProfile}: AppProps) {
       </Text>
       <Box flexDirection="column" marginTop={1}>
         {results.map((result, index) => (
-          <ListLine key={`${result.originalIndex}:${result.entry.name}:${result.entry.path}`} active={index === selectedIndex} result={result} />
+          <ListLine
+            key={`${result.originalIndex}:${result.entry.name}:${result.entry.path}`}
+            active={index === selectedIndex}
+            result={result}
+          />
         ))}
         <Text>
           {selectedIndex === results.length ? paint("cyan", "> ") : "  "}
@@ -327,7 +373,7 @@ export function App({onSelect, onProfile}: AppProps) {
   );
 }
 
-function ListLine({active, result}: {active: boolean; result: SearchResult}) {
+function ListLine({ active, result }: { active: boolean; result: SearchResult }) {
   const marker = result.entry.isFavorite ? "★" : " ";
 
   return (
@@ -344,7 +390,8 @@ function KeybindHelp() {
   return (
     <Box marginTop={1}>
       <Text>
-        {paint("cyan", "↑/↓")} or {paint("cyan", "j/k")} selects, {paint("green", "Enter")} confirms, {paint("yellow", "e")} edits, {paint("red", "Esc")} exits.
+        {paint("cyan", "↑/↓")} selects, {paint("green", "Enter")} confirms,{" "}
+        {paint("yellow", "Ctrl+E")} edits, {paint("red", "Esc")} exits.
       </Text>
     </Box>
   );
@@ -400,38 +447,24 @@ function createEditForm(result: SearchResult): FormState {
 
 function updateFormText(form: FormState, update: (value: string) => string): FormState {
   if (form.field === "name") {
-    return {...form, name: update(form.name)};
+    return { ...form, name: update(form.name) };
   }
 
   if (form.field === "path") {
-    return {...form, path: update(form.path)};
+    return { ...form, path: update(form.path) };
   }
 
   return form;
 }
 
 function nextField(field: FormField): FormField {
-  if (field === "name") {
-    return "path";
-  }
-
-  if (field === "path") {
-    return "favorite";
-  }
-
-  return "name";
+  const currentIndex = formFields.indexOf(field);
+  return formFields[(currentIndex + 1) % formFields.length] ?? "name";
 }
 
 function previousField(field: FormField): FormField {
-  if (field === "favorite") {
-    return "path";
-  }
-
-  if (field === "path") {
-    return "name";
-  }
-
-  return "favorite";
+  const currentIndex = formFields.indexOf(field);
+  return formFields[(currentIndex - 1 + formFields.length) % formFields.length] ?? "name";
 }
 
 function clampIndex(index: number, itemCount: number): number {
@@ -443,5 +476,11 @@ function clampIndex(index: number, itemCount: number): number {
 }
 
 function isTextInput(input: string): boolean {
-  return input.length > 0 && !input.includes("\u001B") && !input.includes("\r") && !input.includes("\n");
+  return (
+    input.length > 0 && !input.includes("\u001B") && !input.includes("\r") && !input.includes("\n")
+  );
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
