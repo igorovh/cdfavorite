@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 const startedAt = performance.now();
 const profileStartup =
   process.argv.includes("--profile-startup") || process.env.CDF_PROFILE === "1";
@@ -80,5 +80,5 @@ profile("app exited");
 
 if (selectedPath) {
   profile("selected path written");
-  await Bun.write(Bun.stdout, `${selectedPath}\n`);
+  process.stdout.write(`${selectedPath}\n`);
 }

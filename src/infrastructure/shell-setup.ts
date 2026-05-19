@@ -1,13 +1,13 @@
 import { existsSync } from "node:fs";
-import { copyFile, readFile, rename, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const startMarker = "# >>> cdf >>>";
 const endMarker = "# <<< cdf <<<";
 
 export type SetupResult = {
-  shell: "bash" | "zsh" | "nushell";
+  shell: "bash" | "zsh" | "nushell" | "powershell";
   path: string;
   status: "installed" | "updated" | "skipped" | "failed";
   error?: string;
@@ -17,6 +17,7 @@ export type ShellConfigTarget = {
   shell: SetupResult["shell"];
   path: string;
   block: string;
+  createIfMissing?: boolean;
 };
 
 export async function installShellWrappers(targets: ShellConfigTarget[]): Promise<SetupResult[]> {
@@ -30,7 +31,17 @@ export async function installShellWrappers(targets: ShellConfigTarget[]): Promis
 }
 
 export function getAvailableShellConfigTargets(): ShellConfigTarget[] {
-  return getShellConfigTargets().filter((target) => existsSync(target.path));
+  const targets = getShellConfigTargets();
+  const existingTargets = targets.filter((target) => existsSync(target.path));
+  const hasExistingPowerShellProfile = existingTargets.some(
+    (target) => target.shell === "powershell",
+  );
+
+  return targets.filter(
+    (target) =>
+      existsSync(target.path) ||
+      (target.createIfMissing && !(target.shell === "powershell" && hasExistingPowerShellProfile)),
+  );
 }
 
 export function getShellConfigTargets(): ShellConfigTarget[] {
@@ -62,6 +73,8 @@ export function getShellConfigTargets(): ShellConfigTarget[] {
     });
   }
 
+  targets.push(...getPowerShellConfigTargets(home));
+
   return targets;
 }
 
@@ -90,17 +103,38 @@ def --env cdf [...args] {
 ${endMarker}`;
 }
 
+export function powershellBlock(): string {
+  return `${startMarker}
+function cdf {
+    $target = & cdf-run @args
+
+    if ($LASTEXITCODE -ne 0) {
+        return
+    }
+
+    if ($target) {
+        Set-Location -LiteralPath ([string]$target).Trim()
+    }
+}
+${endMarker}`;
+}
+
 async function installShellWrapper(target: ShellConfigTarget): Promise<SetupResult> {
-  if (!existsSync(target.path)) {
+  const configExists = existsSync(target.path);
+
+  if (!configExists && !target.createIfMissing) {
     return { shell: target.shell, path: target.path, status: "skipped" };
   }
 
   try {
-    const existingContent = await readFile(target.path, "utf8");
+    const existingContent = configExists ? await readFile(target.path, "utf8") : "";
     const nextContent = upsertMarkedBlock(existingContent, target.block);
     const status = nextContent.replaced ? "updated" : "installed";
 
-    await backupFile(target.path);
+    if (configExists) {
+      await backupFile(target.path);
+    }
+
     await writeFileAtomically(target.path, nextContent.content);
 
     return { shell: target.shell, path: target.path, status };
@@ -112,6 +146,36 @@ async function installShellWrapper(target: ShellConfigTarget): Promise<SetupResu
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function getPowerShellConfigTargets(home: string): ShellConfigTarget[] {
+  const block = powershellBlock();
+
+  if (process.platform === "win32") {
+    const userProfile = process.env.USERPROFILE ?? home;
+    const documentsDirectory = join(userProfile, "Documents");
+    const paths = [
+      join(documentsDirectory, "PowerShell", "Microsoft.PowerShell_profile.ps1"),
+      join(documentsDirectory, "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"),
+    ];
+
+    return unique(paths).map((path, index) => ({
+      shell: "powershell",
+      path,
+      block,
+      createIfMissing: index === 0,
+    }));
+  }
+
+  const configHome = process.env.XDG_CONFIG_HOME ?? join(home, ".config");
+
+  return [
+    {
+      shell: "powershell",
+      path: join(configHome, "powershell", "Microsoft.PowerShell_profile.ps1"),
+      block,
+    },
+  ];
 }
 
 function upsertMarkedBlock(content: string, block: string): { content: string; replaced: boolean } {
@@ -148,6 +212,7 @@ async function backupFile(path: string): Promise<void> {
 async function writeFileAtomically(path: string, content: string): Promise<void> {
   const temporaryPath = `${path}.cdf-${process.pid}.${Date.now()}.tmp`;
 
+  await mkdir(dirname(path), { recursive: true });
   await writeFile(temporaryPath, content, "utf8");
   await rename(temporaryPath, path);
 }

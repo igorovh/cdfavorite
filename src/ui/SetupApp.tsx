@@ -5,6 +5,7 @@ import {
   bashOrZshBlock,
   installShellWrappers,
   nushellBlock,
+  powershellBlock,
   type SetupResult,
   type ShellConfigTarget,
 } from "../infrastructure/shell-setup";
@@ -104,12 +105,15 @@ export function SetupApp({ targets, cdfRunPath }: SetupAppProps) {
   if (targets.length === 0) {
     const bashOrZshSnippet = bashOrZshBlock();
     const nushellSnippet = nushellBlock();
+    const powershellSnippet = powershellBlock();
 
     return (
       <Box flexDirection="column">
         <Text bold>cdf-setup</Text>
         <CdfRunPathStatus cdfRunPath={cdfRunPath} />
-        <Text color="yellow">No existing Bash, Zsh, or Nushell config files were found.</Text>
+        <Text color="yellow">
+          No supported Bash, Zsh, Nushell, or PowerShell config targets were found.
+        </Text>
         <Text>
           No config files were created automatically. Add the wrapper manually if you want to use
           it.
@@ -124,6 +128,12 @@ export function SetupApp({ targets, cdfRunPath }: SetupAppProps) {
           <Text bold>Nushell</Text>
           {nushellSnippet.split("\n").map((line, index) => (
             <Text key={`nushell-${index}`}>{line}</Text>
+          ))}
+        </Box>
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold>PowerShell</Text>
+          {powershellSnippet.split("\n").map((line, index) => (
+            <Text key={`powershell-${index}`}>{line}</Text>
           ))}
         </Box>
         <Text color="gray">Enter or Esc exits.</Text>
@@ -172,6 +182,7 @@ export function SetupApp({ targets, cdfRunPath }: SetupAppProps) {
       <Text>
         Select the shell configurations where the `cdf` wrapper should be installed or updated.
       </Text>
+      <Text color="gray">Missing PowerShell profile files can be created by setup.</Text>
       <Text color="gray">↑/↓ or j/k selects, Space toggles, Enter installs, Esc cancels.</Text>
       <Box flexDirection="column" marginTop={1}>
         {targets.map((target, index) => {
@@ -182,6 +193,7 @@ export function SetupApp({ targets, cdfRunPath }: SetupAppProps) {
             <Text key={`${target.shell}:${target.path}`} color={active ? "cyan" : undefined}>
               {active ? "> " : "  "}[{selected ? "x" : " "}] {target.shell}{" "}
               <Text color="gray">{target.path}</Text>
+              {target.createIfMissing ? <Text color="gray"> (created if missing)</Text> : null}
             </Text>
           );
         })}
@@ -197,8 +209,8 @@ function CdfRunPathStatus({ cdfRunPath }: { cdfRunPath?: string }) {
 
   return (
     <Text color="yellow">
-      cdf-run was not found on PATH. Ensure Bun's global bin directory is on PATH or reinstall with
-      `bun i -g cdfavorite`.
+      cdf-run was not found on PATH. Ensure your npm or Bun global bin directory is on PATH, then
+      reinstall cdfavorite.
     </Text>
   );
 }

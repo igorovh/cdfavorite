@@ -47,11 +47,12 @@ bun run build
 Output:
 
 ```text
-npm-dist/index.js      # cdf-run entrypoint
-npm-dist/setup.js      # cdf-setup entrypoint
+npm-dist/cdf.js        # setup guidance entrypoint
+npm-dist/cdf-run.js    # interactive app entrypoint
+npm-dist/cdf-setup.js  # shell setup entrypoint
 ```
 
-These are compiled JS files with a `#!/usr/bin/env bun` shebang, so both `npm i -g cdfavorite` and `bun i -g cdfavorite` work.
+These are compiled JS files with a `#!/usr/bin/env node` shebang. The published package runs on Node.js 22+; Bun is used for development and building.
 
 ## Startup Profiling
 
@@ -87,13 +88,13 @@ git push --follow-tags
 The package is installed with:
 
 ```bash
-bun i -g cdfavorite
-# or
 npm i -g cdfavorite
+# or
+bun i -g cdfavorite
 cdf-setup
 ```
 
-`bun i -g cdfavorite` installs the `cdf-run` and `cdf-setup` commands. `cdf-setup` remains a required explicit step because installing a package should not silently edit a user's shell configuration.
+Global installation adds `cdf`, `cdf-run`, and `cdf-setup` commands. `cdf-setup` remains a required explicit step because installing a package should not silently edit a user's shell configuration.
 
 ## Project Structure
 
@@ -101,8 +102,8 @@ cdf-setup
 src/domain              Core path entry/search logic
 src/infrastructure      Storage, config paths, shell setup, PATH lookup
 src/ui                  Ink UI components
+src/cdf.ts              cdf setup guidance entrypoint
 src/index.tsx           cdf-run entrypoint
 src/setup.tsx           cdf-setup entrypoint
 scripts/build-npm.ts    NPM distribution build
-scripts/postinstall.js  Post-install message
 ```

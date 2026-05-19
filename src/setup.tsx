@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { render } from "ink";
 
 import { findCommandOnPath } from "./infrastructure/command-path";

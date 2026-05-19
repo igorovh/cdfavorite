@@ -1,7 +1,7 @@
 {
   "name": "cdfavorite",
   "version": "0.1.4",
-  "description": "Change Directory Favorites: an interactive Bun CLI for jumping to saved directories.",
+  "description": "Change Directory Favorites: an interactive CLI for jumping to saved directories.",
   "module": "src/index.tsx",
   "type": "module",
   "license": "MIT",
@@ -10,7 +10,6 @@
     "url": "git+https://github.com/igorovh/cdfavorite.git"
   },
   "keywords": [
-    "bun",
     "cd",
     "cli",
     "directory",
@@ -19,15 +18,15 @@
     "terminal"
   ],
   "engines": {
-    "bun": ">=1.3.0"
+    "node": ">=22.0.0"
   },
   "files": [
     "npm-dist",
-    "scripts/postinstall.js",
     "README.md",
     "LICENSE"
   ],
   "bin": {
+    "cdf": "npm-dist/cdf.js",
     "cdf-run": "npm-dist/cdf-run.js",
     "cdf-setup": "npm-dist/cdf-setup.js"
   },
@@ -35,7 +34,6 @@
     "build": "bun scripts/build-npm.ts",
     "cdf-run": "bun src/index.tsx",
     "cdf-setup": "bun src/setup.tsx",
-    "postinstall": "bun scripts/postinstall.js",
     "prepublishOnly": "bun scripts/build-npm.ts",
     "pack:dry-run": "npm pack --dry-run",
     "test": "bun test",

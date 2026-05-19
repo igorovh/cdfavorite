@@ -1,10 +1,10 @@
-import { writeFile } from "node:fs/promises";
-import { mkdir } from "node:fs/promises";
+import { chmod, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const shebang = "#!/usr/bin/env bun\n";
+const shebang = "#!/usr/bin/env node\n";
 
 const targets = [
+  { name: "cdf", entrypoint: "src/cdf.ts" },
   { name: "cdf-run", entrypoint: "src/index.tsx" },
   { name: "cdf-setup", entrypoint: "src/setup.tsx" },
 ] as const;
@@ -16,7 +16,7 @@ await mkdir(outdir, { recursive: true });
 for (const target of targets) {
   const result = await Bun.build({
     entrypoints: [target.entrypoint],
-    target: "bun",
+    target: "node",
     format: "esm",
     define: {
       "process.env.NODE_ENV": '"production"',
@@ -47,14 +47,15 @@ for (const target of targets) {
 
   const text = await output.text();
 
-  // Strip the duplicated shebang Bun adds after its // @bun marker
+  // Strip a duplicated shebang if the bundler preserves an entrypoint shebang.
   const cleaned = text.replace(
-    /^#!\/usr\/bin\/env bun\n\/\/ @bun\n#!\/usr\/bin\/env bun\n/,
-    "#!/usr/bin/env bun\n",
+    /^#!\/usr\/bin\/env node\n#!\/usr\/bin\/env (?:node|bun)\n/,
+    "#!/usr/bin/env node\n",
   );
 
   const outPath = join(outdir, `${target.name}.js`);
   await writeFile(outPath, cleaned);
+  await chmod(outPath, 0o755);
 
   console.log(`Built ${target.name} to npm-dist/${target.name}.js`);
 }

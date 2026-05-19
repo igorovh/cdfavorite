@@ -8,6 +8,7 @@ import {
   getShellConfigTargets,
   installShellWrappers,
   nushellBlock,
+  powershellBlock,
 } from "../../src/infrastructure/shell-setup";
 
 describe("bashOrZshBlock", () => {
@@ -41,6 +42,23 @@ describe("nushellBlock", () => {
     expect(block).toContain("def --env cdf");
     expect(block).toContain("cdf-run");
     expect(block).toContain("cd");
+  });
+});
+
+describe("powershellBlock", () => {
+  test("contains start marker", () => {
+    expect(powershellBlock()).toContain("# >>> cdf >>>");
+  });
+
+  test("contains end marker", () => {
+    expect(powershellBlock()).toContain("# <<< cdf <<<");
+  });
+
+  test("contains a PowerShell function definition", () => {
+    const block = powershellBlock();
+    expect(block).toContain("function cdf");
+    expect(block).toContain("cdf-run");
+    expect(block).toContain("Set-Location");
   });
 });
 
@@ -99,6 +117,13 @@ describe("getShellConfigTargets", () => {
     }
   });
 
+  test("contains PowerShell profile target", () => {
+    const targets = getShellConfigTargets();
+    const powershellTarget = targets.find((t) => t.shell === "powershell");
+    expect(powershellTarget).toBeDefined();
+    expect(powershellTarget?.path).toEndWith("Microsoft.PowerShell_profile.ps1");
+  });
+
   test("all paths are absolute", () => {
     for (const target of getShellConfigTargets()) {
       expect(target.path).toMatch(/^(\/|[A-Za-z]:\\)/);
@@ -138,6 +163,24 @@ describe("installShellWrappers", () => {
     ]);
     expect(results).toHaveLength(1);
     expect(results[0]?.status).toBe("skipped");
+  });
+
+  test("creates missing config file when target allows creation", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "cdf-test-shell-"));
+    const configPath = join(tmpDir, "PowerShell", "Microsoft.PowerShell_profile.ps1");
+
+    const results = await installShellWrappers([
+      {
+        shell: "powershell",
+        path: configPath,
+        block: powershellBlock(),
+        createIfMissing: true,
+      },
+    ]);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.status).toBe("installed");
+    expect(readFileSync(configPath, "utf8")).toBe(`${powershellBlock()}\n`);
   });
 
   test("installs block when config file exists and is empty", async () => {
