@@ -198,7 +198,7 @@ function CdfRunPathStatus({ cdfRunPath }: { cdfRunPath?: string }) {
   return (
     <Text color="yellow">
       cdf-run was not found on PATH. Ensure Bun's global bin directory is on PATH or reinstall with
-      `bun i -g cdf-cli`.
+      `bun i -g cdfavorite`.
     </Text>
   );
 }

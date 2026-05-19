@@ -36,9 +36,9 @@ Lint & format (auto-fix):
 bun run biome:fix
 ```
 
-## Standalone Executables
+## Build
 
-Build local standalone executables:
+Build the npm distribution:
 
 ```bash
 bun run build
@@ -47,25 +47,11 @@ bun run build
 Output:
 
 ```text
-dist/cdf-run.exe       # Windows
-dist/cdf-setup.exe     # Windows
-dist/cdf-run           # macOS/Linux
-dist/cdf-setup         # macOS/Linux
+npm-dist/index.js      # cdf-run entrypoint
+npm-dist/setup.js      # cdf-setup entrypoint
 ```
 
-Optional local Windows-style standalone install:
-
-```bash
-bun run install-global -- --yes
-```
-
-Useful installer flags:
-
-```bash
-bun run install-global -- --dry-run
-bun run install-global -- --yes
-bun run install-global -- --no-path
-```
+These are compiled JS files with a `#!/usr/bin/env bun` shebang, so both `npm i -g cdfavorite` and `bun i -g cdfavorite` work.
 
 ## Startup Profiling
 
@@ -91,21 +77,23 @@ Dry-run package contents:
 npm pack --dry-run
 ```
 
-Publish:
+Publishing is automated via `.github/workflows/ci-publish.yml` using npm trusted publishing (OIDC). Push a `v*` tag to trigger it:
 
 ```bash
-npm login
-npm publish
+npm version patch
+git push --follow-tags
 ```
 
-The npm package is intended to be installed with:
+The package is installed with:
 
 ```bash
-bun i -g cdf-cli
+bun i -g cdfavorite
+# or
+npm i -g cdfavorite
 cdf-setup
 ```
 
-`bun i -g cdf-cli` installs the `cdf-run` and `cdf-setup` commands. `cdf-setup` remains a required explicit step because installing a package should not silently edit a user's shell configuration.
+`bun i -g cdfavorite` installs the `cdf-run` and `cdf-setup` commands. `cdf-setup` remains a required explicit step because installing a package should not silently edit a user's shell configuration.
 
 ## Project Structure
 
@@ -115,6 +103,6 @@ src/infrastructure      Storage, config paths, shell setup, PATH lookup
 src/ui                  Ink UI components
 src/index.tsx           cdf-run entrypoint
 src/setup.tsx           cdf-setup entrypoint
-scripts/build.ts        Standalone executable build
-scripts/install-global.ts Local standalone installer
+scripts/build-npm.ts    NPM distribution build
+scripts/postinstall.js  Post-install message
 ```
