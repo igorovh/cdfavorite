@@ -38,6 +38,7 @@
     "postinstall": "bun scripts/postinstall.js",
     "prepublishOnly": "bun scripts/build-npm.ts",
     "pack:dry-run": "npm pack --dry-run",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "biome:check": "biome check",
     "biome:fix": "biome check --write"
