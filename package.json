@@ -1,6 +1,6 @@
 {
   "name": "cdfavorite",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Change Directory Favorites: an interactive CLI for jumping to saved directories.",
   "module": "src/index.tsx",
   "type": "module",
