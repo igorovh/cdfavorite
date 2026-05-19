@@ -27,4 +27,6 @@ jobs:
 
       - run: bun run typecheck
 
+      - run: npm install -g npm@latest
+
       - run: npm publish
